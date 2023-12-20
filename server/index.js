@@ -1,76 +1,48 @@
-import express from 'express'
-import jwt from 'jsonwebtoken'
+import express, { json } from 'express';
+import fileUpload from 'express-fileupload';
+import path from 'path';
+const app = express();
+app.use(fileUpload());
+const port=3000
 
-const privateKey="ddjbshs@12"
-
-
-const app = express()
-const port = 3000
 app.use(express.json())
+app.use(express.urlencoded({extended:true}))
 
+const __dirname=path.resolve()
 
-const users=[
-  {
-    name:"Nura",
-    password:"1234",
-    role:"user"
-},
-{
-  name:"Mata",
-  password:"mata234",
-  role:"user"
-},
-{
-  name:"mehi",
-  password:"mehi123",
-  role:"admin"
-}
-
-]
+app.get('/',(req,res)=>{
+  res.send('')
+})
 
 
 
 
-app.post('/login',async (req, res) => {
-  //ad ve sifre aliram
-  const {name,password}=req.body
-  //userin var olub olmadigini tapiram
-  const user = users.find(x=>x.name===name)
-  if (!user) {
-  res.status(404).send("user not found")
+app.post('/upload', async (req, res)=> {
+  let sampleFile;
+  let uploadPath;
+
+  if (!req.files || Object.keys(req.files).length === 0) {
+    return res.status(400).send('No files were uploaded.');
   }
-//parol eynidirmi yoxla 
-if (user.password!==password) {
-  res.status(403).send("password is wrong")
-}
+  const myFiles = Object.keys(req.files)
+  myFiles.forEach(x=>{
+    sampleFile = req.files[x];
+    uploadPath = path.join(__dirname ,'src' , 'public' ,sampleFile.name)
+    sampleFile.mv(uploadPath, function(err) {
+      if (err)
+        return res.status(500).send(err); 
+    });
+  })
+  res.send('File uploaded!');
 
-jwt.sign({ name: name }, privateKey, async function(err, token) {
-  if (err) {
-  res.status(400).send("token cant generate")
-  }
-  console.log(token);
-  res.send(token)
 });
+  // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
 
-  
-})
 
-app.get('/', (req, res) => {
-  const token=req.headers.authorization
-  let decoded
-  if (!token) {
-    res.status(403).send("you dont have access")
-  }
+  // Use the mv() method to place the file somewhere on your server
  
-    try {
-      const decoded = jwt.verify(token, privateKey);
-    } catch (error) {
-      res.status(403).send(error.message)
-    }
-  
-  res.status(200).send(users)
-})
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+
+app.listen(port, ()=>{
+  console.log("server listened");
 })
